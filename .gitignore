@@ -1,0 +1,6 @@
+*.user
+*.env
+*.suo
+.vs/
+[Bb]in/
+[Oo]bj/
