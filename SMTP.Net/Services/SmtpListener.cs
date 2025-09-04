@@ -42,9 +42,21 @@ public class SmtpListener : BackgroundService
     /// <param name="message">The receoved email message</param>
     private void HandleMailReceived(object? sender, MimeMessage message)
     {
+        var service = new EmailHelperService();
+
         var emailDto = new EmailDto()
         {
-
+            Date = message.Date != DateTimeOffset.MinValue ? message.Date.DateTime : null,
+            From = message.From.Mailboxes.FirstOrDefault()?.Address ?? "Unknown",
+            To = string.Join(", ", message.To.Mailboxes.Select(x => x.Address)),
+            Cc = string.Join(", ", message.Cc.Mailboxes.Select(x => x.Address)),
+            Bcc = string.Join(", ", message.Bcc.Mailboxes.Select(x => x.Address)),
+            Subject = message.Subject ?? "(No Subject)",
+            HtmlBody = message.HtmlBody ?? string.Empty,
+            TextBody = message.TextBody ?? string.Empty,
+            RawMessage = service.GetRawMessage(message),
+            Headers = message.Headers.ToDictionary(x => x.Field, x => x.Value),
+            Parts = service.ExtractEmailParts(message)
         };
 
         hubContext.Clients.All.ReceivedMail(emailDto).GetAwaiter().GetResult();

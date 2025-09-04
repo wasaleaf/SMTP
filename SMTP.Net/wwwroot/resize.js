@@ -1,5 +1,5 @@
-﻿window.reseizeService = {
-    addResizeListenser: function (dotnetHelper) {
+﻿window.resizeService = {
+    addResizeListener: function (dotnetHelper) {
         window.onresize = function () {
             dotnetHelper.invokeMethodAsync('NotifyResize', window.innerWidth);
         };
