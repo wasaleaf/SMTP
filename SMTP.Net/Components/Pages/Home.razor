@@ -1,0 +1,301 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using SMTP.Net.Services
+@using SMTP.Net.Types
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@inject ResizeService ResizeService
+@inject IJSRuntime JSRuntime
+
+<div class="mail-page">
+    <div class="header">
+        <span class="title">
+            <img class="logo" src="favicon.ico" />
+            <span class="text">SMTP.Net</span>
+        </span>
+        <button @onclick="ClearMessages">
+            <i class="fa-solid fa-xmark"></i>
+            Clear
+        </button>
+    </div>
+
+    <div class="content">
+        @if (isHalfScreen == false || isHalfScreen && selectedItem == null)
+        {
+            <div class="table" style="width: @(selectedItem == null ? "100%" : "50%")">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Received</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Subject</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var email in messages)
+                        {
+                            <tr class="@(selectedItem == email ? "primary" : "")" @onclick="() => SelectRow(email)">
+                                <td>@email.Date</td>
+                                <td>@email.From</td>
+                                <td>@email.To</td>
+                                <td>
+                                    @email.Subject
+                                    @if (email.Parts.Any(x => x.IsAttachment))
+                                    {
+                                        <i class="fa solid fa-paperclip"></i>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (selectedItem != null)
+        {
+            <div class="email" style="width: @(isHalfScreen ? "100%" : "50%")">
+                @if (isHalfScreen)
+                {
+                    <button @onclick="DeselectItem">
+                        <i class="fa-regular fa-square-caret-left"></i>
+                        Back
+                    </button>
+                }
+                <div class="details">
+                    <span>
+                        <span class="label">From:</span>
+                        <span>@selectedItem.From</span>
+                    </span>
+                    <span>
+                        <span class="label">To:</span>
+                        <span>@selectedItem.To</span>
+                    </span>
+                    @if (selectedItem.Cc != string.Empty)
+                    {
+                        <span>
+                            <span class="label">Cc:</span>
+                            <span>@selectedItem.Cc</span>
+                        </span>
+                    }
+                    @if (selectedItem.Bcc != string.Empty)
+                    {
+                        <span>
+                            <span class="label">Bcc:</span>
+                            <span>@selectedItem.Bcc</span>
+                        </span>
+                    }
+                    <span>
+                        <span class="label">Subject:</span>
+                        <span>@selectedItem.Subject</span>
+                    </span>
+                </div>
+                <div class="tab-buttons">
+                    @foreach (var tab in tabs)
+                    {
+                        <span class="tab-button @(tab == activeTab ? "active" : "")"
+                        @onclick="() => SelectTab(tab)">
+                            <span class="tab-button-inner">
+                                <i class="@tab,IconClass"></i> @tab.Title
+                            </span>
+                        </span>
+                    }
+                </div>
+                <div class="tab-content">
+                    @if (activeTab == tabs[0])
+                    {
+                        @if (selectedItem.Parts.Any(x => x.IsAttachment))
+                        {
+                            <div class="attachment">
+                                @foreach (var attachment in selectedItem.Parts)
+                                {
+                                    @if (attachment.IsAttachment)
+                                    {
+                                        <div class="file">
+                                            <i class="fa-solid fa-paperclip"></i>
+                                            <span>@attachment.FileName</span>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(selectedItem.TextBody))
+                        {
+                            <pre>@selectedItem.TextBody</pre>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(selectedItem.HtmlBody))
+                        {
+                            <div>@((MarkupString)selectedItem.HtmlBody)</div>
+                        }
+                    }
+                    else if (activeTab == tabs[1])
+                    {
+                        <div class="table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var header in selectedItem.Headers)
+                                    {
+                                        <tr>
+                                            <td>@header.Key</td>
+                                            <td>@header.Value</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="source">
+                            <pre>@selectedItem.RawMessage</pre>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Defines tabs for different views in the email UI
+    /// </summary>
+    private List<TabItem> tabs = new()
+    {
+        new TabItem { Title = "View", IconClass = "fa-regular fa-eye" },
+        new TabItem { Title = "Headers", IconClass = "fa-regular fa-file-lines" },
+        new TabItem { Title = "Source", IconClass = "fa-regular fa-window-restore" }
+    };
+    /// <summary>
+    /// Stores the currently active tab
+    /// </summary>
+    private TabItem? activeTab { get; set; }
+    /// <summary>
+    /// SignalR hub connection for receiving emails in real-time
+    /// </summary>
+    private HubConnection? hubConnection;
+    /// <summary>
+    /// List to store received email messages
+    /// </summary>
+    private List<EmailDto> messages = [];
+    /// <summary>
+    /// Flag to determine if the UI should be in half-screen mode
+    /// </summary>
+    private bool isHalfScreen;
+    /// <summary>
+    /// Maximum number of messages to keep in memory
+    /// </summary>
+    private readonly int maxMessages = 100;
+    /// <summary>
+    /// Width size to determine if screen should be in half-screen mode
+    /// </summary>
+    private readonly int halfSize = 850;
+    /// <summary>
+    /// Currently selected email item
+    /// </summary>
+    private EmailDto? selectedItem;
+
+    /// <summary>
+    /// Initializes the component, sets up SignalR connection, and handles incoming emails
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation</returns>
+    protected override async Task OnInitializedAsync()
+    {
+        // Set default active tab to the first tab
+        activeTab = tabs[0];
+
+        var hubUrl = Navigation.ToAbsoluteUri("/emailHub").ToString();
+        hubUrl = Environment.GetEnvironmentVariable("IsDocker") == "1" ? hubUrl.Replace("localhost", "host.docker.internal") : hubUrl;
+
+        // Configure and start SignalR connection
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(hubUrl) // Connect to the SignalR hub
+            .WithAutomaticReconnect()
+            .Build();
+
+        // Listen for incoming emails and update the UI when a new message arrives
+        hubConnection.On<EmailDto>("ReceivedMail", (message) =>
+        {
+            // Ensure the message list does not exceed the max message limit
+            if (messages.Count >= maxMessages)
+                messages = messages[..^1];
+
+            messages = messages.Prepend(message).ToList();
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync(); // Start the SignalR connection
+    }
+
+    /// <summary>
+    /// Handles window resizing and updates the layout accordingly
+    /// </summary>
+    /// <param name="firstRender">Indicates if this is the first render of the component</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Subscribe to window resize events
+            ResizeService.OnResize += HandleResize;
+            await ResizeService.InitializeAsync();
+
+            // Get initial width on page load
+            int width = await JSRuntime.InvokeAsync<int>("resizeService.getWindowWidth", new object[] { });
+            HandleResize(width);
+        }
+    }
+
+    /// <summary>
+    /// Adjusts UI elements based on window width
+    /// </summary>
+    /// <param name="width">The current window width</param>
+    private void HandleResize(int width)
+    {
+        isHalfScreen = width < halfSize;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Selects an email from the list for detailed viewing
+    /// </summary>
+    /// <param name="item">The email message to select</param>
+    private void SelectRow(EmailDto item)
+    {
+        selectedItem = item;
+    }
+
+    /// <summary>
+    /// Deselects the currently selected email
+    /// </summary>
+    private void DeselectItem()
+    {
+        selectedItem = null;
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Clears all stored messages and closes selected email
+    /// </summary>
+    private void ClearMessages()
+    {
+        messages.Clear();
+        selectedItem = null;
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Switches the active tab
+    /// </summary>
+    /// <param name="tab">The tab to activate</param>
+    private void SelectTab(TabItem tab)
+    {
+        activeTab = tab;
+    }
+}

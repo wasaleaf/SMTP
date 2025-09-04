@@ -1,0 +1,234 @@
+﻿html, body {
+  --font-family: "Rubik", sans-serif;
+  --font-size: 14px;
+  --base: #141414;
+  --base-lighter: #212121;
+  --highlight: #340732;
+  --accent: #0f6aad;
+  --label-width: 6rem;
+  --color: #efefef;
+  --border-color: #666;
+  --line-height: 2.18rem;
+  --button-background: var(--accent);
+  --button-color: var(--color);
+  --button-height: 2.5rem;
+  --border-radius: 0.5rem;
+  --tab-button-width: 8rem;
+  --tab-buttons-pad-left: 0.5rem;
+  --border-color: 0.1rem solid var(--border-color);
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  overflow: hidden;
+  background: var(--base);
+  color: var(--color);
+}
+
+body {
+  margin: 8px;
+}
+
+@media (max-width: 700px) {
+  html, body {
+    font-size: 12px;
+  }
+}
+@media (max-width: 580px) {
+  html, body {
+    font-size: 11px;
+  }
+}
+@media (max-width: 430px) {
+  html, body {
+    font-size: 11px;
+  }
+}
+::-webkit-scrollbar {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--input-background);
+  border-radius: 0.75rem;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--input-background);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--base);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--base);
+}
+
+.tab-buttons {
+  display: flex;
+  border-bottom: var(--border);
+  padding-left: var(--tab-buttons-pad-left);
+}
+.tab-buttons .tab-button {
+  border: var(--border);
+  color: rgba(235, 235, 235, 0.7411764706);
+  cursor: pointer;
+  text-align: center;
+  opacity: 0.7;
+  transform: scale(0.95);
+  border-bottom: none;
+  line-height: calc(var(--line-height) + 7px);
+  min-width: var(--tab-button-width);
+  user-select: none;
+}
+.tab-buttons .tab-button:hover, .tab-buttons .tab-button:focus {
+  outline: none;
+  opacity: 1;
+  transform: scale(1);
+}
+.tab-buttons .tab-button.active {
+  color: var(--color);
+  background: var(--base-lighter);
+  font-weight: 600;
+  opacity: 1;
+  transform: scale(1);
+  position: relative;
+  bottom: -1px;
+}
+
+button {
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  background: var(--button-background);
+  color: var(--button-color);
+  height: var(--button-height);
+  border: none;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  margin: 0.25rem;
+  min-width: var(--tab-button-width);
+  cursor: pointer;
+}
+button img, button i {
+  height: 1rem;
+  margin-right: 0.5rem;
+  position: relative;
+  top: 0.1rem;
+}
+
+pre {
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+}
+
+.mail-page {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: calc(100vh - 2rem);
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 1rem;
+  width: calc(100vw - 1rem);
+}
+.header .title {
+  font-size: 1.25rem;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+}
+.header .title img {
+  height: 2rem;
+  margin-right: 0.5rem;
+  position: relative;
+  top: -2px;
+}
+
+.content {
+  width: calc(100vw - 1rem);
+  display: flex;
+  flex-direction: row;
+  height: calc(100% - 2rem);
+}
+.content .table {
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  background: var(--base-lighter);
+  color: var(--color);
+  overflow: auto;
+  margin-bottom: 0;
+}
+.content .table table {
+  width: 100%;
+  border-color: var(--border-color);
+}
+.content .table table th, .content .table table td {
+  padding-left: 0.5rem;
+}
+.content .table table th {
+  border: none;
+  background: var(--border-color);
+}
+.content .table table tr {
+  height: 3rem;
+}
+.content .table table tr.primary {
+  background: var(--highlight);
+}
+.content .table table i {
+  margin-left: 0.5rem;
+}
+.content .email {
+  overflow: auto;
+  margin-left: 0.5rem;
+}
+.content .email .details {
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  background: var(--base-lighter);
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+.content .email .details .label {
+  display: inline-block;
+  width: var(--label-width);
+  min-width: var(--label-width);
+  max-width: var(--label-width);
+  line-height: var(--line-height);
+}
+.content .email .tab-content {
+  margin-top: 1rem;
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+.content .email .tab-content .attachments {
+  display: flex;
+  margin-bottom: 1rem;
+}
+.content .email .tab-content .attachments .file {
+  border: var(--border);
+  padding: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  border-radius: 1rem;
+}
+.content .email .tab-content .attachments .file + .file {
+  margin-left: 0.5rem;
+}
+.content .email .tab-content .table {
+  width: 100%;
+}
+@media (max-width: 850px) {
+  .content .table, .content .email {
+    width: 100%;
+  }
+  .content .email {
+    margin-left: 0;
+  }
+  .content .email button + .details {
+    margin-top: 0.5rem;
+  }
+}
