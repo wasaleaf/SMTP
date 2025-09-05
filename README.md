@@ -71,4 +71,5 @@ QUIT
 ```
 
 ## Demo
-![Blazor SMTP Demo](/assets/demo.gif)
+![Blazor SMTP Demo](assets/demo.gif)
+![Blazor SMTP Half Screen Demo](assets/half-screen-demo.gif)
